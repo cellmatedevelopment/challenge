@@ -44,6 +44,14 @@ class ElevatorController(object):
         # (elevator.current_floor < from_floor) and (to_floor > e.current_floor) and (e.desired_floor > e.current_floor)
         # ... and the reverse. just some way to detect direction.
 
+        # NOTE2: Biggest note of all! Please read this part! this is a terrible elevator system.
+        # elevator moving is synchronous so only 1 can move at a time! I figured I'd go synchronous,
+        # iron out movement and selection logic, then iterate 1 more time to make it async...
+        # alas, low on time, but I'd make the 2 elevator moves above into 1 atomic, async operation and this
+        # move method would just fire off move commands and not block. It would rely on a bulked up callback
+        # to keep its internal state(keyed by elevator id, should be ok async) up to date. idea is you request an
+        # elevators, and one comes if it can and then takes you to your desired floor if it can. c'est la vie.
+
     # a private instance method(to the outside world) used as a callback for
     # elevators to update the controller with their status. simple observer pattern mod.
     def _update_elevator_status(self, elevator):
@@ -93,7 +101,7 @@ class _Elevator(object):
             return
 
         # this tells the elevator to go up or down by 1 floor
-        # might be a 1-off error in these ranges            
+        # might be a 1-off error in these ranges  
         if desired_floor < self.current_floor:
             move_sequence = range(self.current_floor - 1, desired_floor -1, -1)
         else:
