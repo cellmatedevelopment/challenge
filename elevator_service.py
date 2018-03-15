@@ -6,7 +6,9 @@
 # Singularly exposed public resource in this service.
 # It serves as the logical front end of an elevator system.
 # It's concerend with software functions a real elevator system
-# would require; system state/status and routing/dispatching.
+# would require; system state/status and routing/dispatching. Key to
+# my interpretation is that software is PART OF the elevator system and
+# does not constitute it entirely. 
 class ElevatorController(object):
     
     def __init__(self, num_floors, num_elevators):
@@ -26,6 +28,21 @@ class ElevatorController(object):
     def request_move(self, from_floor, to_floor):
         if not(1 < to_floor <= self._num_floors):
             raise Exception('Elevator System is configured to onyl reach floor {0}'.format(self._num_floors))
+
+        # get in service elevators chilling with their doors open(see NOTES below)
+        avail_elevators = [e for e in self._elevators if e.in_service and e.is_open]
+        # get the closest to from_floor(will grab open elevator on the floor)
+        closest_elevator = sorted(avail_elevators, key=lambda e: abs(e.current_floor - from_floor))[0]
+
+        closest_elevator.move(from_floor)
+        
+        closest_elevator.move(to_floor)
+
+        # NOTE: due to time constraints, I ommitted the logic that considers
+        # (un)occupied elevators. To deal with that, I would record in elevator
+        # that it is on a trip, make desired_floor part of elevator state and use a few inequalities such like:
+        # (elevator.current_floor < from_floor) and (to_floor > e.current_floor) and (e.desired_floor > e.current_floor)
+        # ... and the reverse. just some way to detect direction.
 
     # a private instance method(to the outside world) used as a callback for
     # elevators to update the controller with their status. simple observer pattern mod.
@@ -71,8 +88,12 @@ class _Elevator(object):
         if not self.in_service:
             raise Exception('Elevator {0} is not in service'.format(self.id))
 
+        # short circuit and do nothing if we're at the floor already
+        if desired_floor == self.current_floor:
+            return
+
         # this tells the elevator to go up or down by 1 floor
-        # might be a 1-off error in these ranges
+        # might be a 1-off error in these ranges            
         if desired_floor < self.current_floor:
             move_sequence = range(self.current_floor - 1, desired_floor -1, -1)
         else:
