@@ -25,20 +25,30 @@ class ElevatorController(object):
             self._update_elevator_status(elevator)
 
     # only public method and primary interface to the system
-    def request_move(self, from_floor, to_floor):
+    # this'll just dispatch an elevator to you...doesnt return one
+    async def request_move(self, from_floor, to_floor):
         if not(1 < to_floor <= self._num_floors):
             raise Exception('Elevator System is configured to onyl reach floor {0}'.format(self._num_floors))
 
-        # get in service elevators chilling with their doors open(see NOTES below)
+        # get in service elevators chilling with their doors open(see NOTE1 below)
         avail_elevators = [e for e in self._elevators if e.in_service and e.is_open]
         # get the closest to from_floor(will grab open elevator on the floor)
         closest_elevator = sorted(avail_elevators, key=lambda e: abs(e.current_floor - from_floor))[0]
 
-        closest_elevator.move(from_floor)
-        
-        closest_elevator.move(to_floor)
+        # no, you can't do this in python.
+        # no inline async anonymous functions, just trying to
+        # wrap those move calls in something async so i can 
+        # enforce sequenece inside of the 2 async move calls
+        # ideally, i'd have time to expand the move method
+        # to go to both from_floor and to_floor so we can dispatch
+        # off that routine without the made up async block here :)
+        async lambda: 
+            # move there
+            await closest_elevator.move(from_floor)
+            # move to the desired floor
+            closest_elevator.move(to_floor)
 
-        # NOTE: due to time constraints, I ommitted the logic that considers
+        # NOTE1: due to time constraints, I ommitted the logic that considers
         # (un)occupied elevators. To deal with that, I would record in elevator
         # that it is on a trip, make desired_floor part of elevator state and use a few inequalities such like:
         # (elevator.current_floor < from_floor) and (to_floor > e.current_floor) and (e.desired_floor > e.current_floor)
@@ -51,6 +61,8 @@ class ElevatorController(object):
         # move method would just fire off move commands and not block. It would rely on a bulked up callback
         # to keep its internal state(keyed by elevator id, should be ok async) up to date. idea is you request an
         # elevators, and one comes if it can and then takes you to your desired floor if it can. c'est la vie.
+
+        # NOTE3: I added a few async-await keywords just to give you an idea!
 
     # a private instance method(to the outside world) used as a callback for
     # elevators to update the controller with their status. simple observer pattern mod.
@@ -91,7 +103,7 @@ class _Elevator(object):
 
     # well this moves to a new floor, named to keep
     # a bit of symmetry with the controller
-    def move(self, desired_floor):
+    async def move(self, desired_floor):
         # shouldnt happen, but people go in here!
         if not self.in_service:
             raise Exception('Elevator {0} is not in service'.format(self.id))
