@@ -25,7 +25,8 @@ class ElevatorController(object):
 
     # only public method and primary interface to the system
     def request_move(self, from_floor, to_floor):
-        pass
+        if not(1 < to_floor <= self._num_floors):
+            raise Exception('Elevator System is configured to onyl reach floor {0}'.format(self._num_floors))
 
     # a private instance method(to the outside world) used as a callback for
     # elevators to update the controller with their status. simple observer pattern mod.
@@ -67,7 +68,17 @@ class _Elevator(object):
     # well this moves to a new floor, named to keep
     # a bit of symmetry with the controller
     def move(self, desired_floor):
-        pass
+        # shouldnt happen, but people go in here!
+        if not self.in_service:
+            raise Exception('Elevator {0} is not in service'.format(self.id))
+
+        # this tells the elevator to go up or down by 1 floor
+        # might be a 1-off error in these ranges
+        if desired_floor < self.current_floor:
+            move_sequence = range(self.current_floor - 1, desired_floor -1, -1)
+        else:
+            move_sequence = range(self.current_floor + 1, desired_floor + 1, 1)
 
     def _toggle_door(self):
-        pass
+        self.is_open = not self.is_open
+        self.update_system_callback(self)
