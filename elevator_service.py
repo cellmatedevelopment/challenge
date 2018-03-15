@@ -22,7 +22,6 @@ class ElevatorController(object):
             self._elevators.append(elevator)
             self._update_elevator_status(elevator)
 
-
     # only public method and primary interface to the system
     def request_move(self, from_floor, to_floor):
         if not(1 < to_floor <= self._num_floors):
@@ -78,6 +77,26 @@ class _Elevator(object):
             move_sequence = range(self.current_floor - 1, desired_floor -1, -1)
         else:
             move_sequence = range(self.current_floor + 1, desired_floor + 1, 1)
+
+        # Go through the steps of changing floors!
+        self._toggle_door()
+
+        for floor in move_sequence:
+            self.current_floor = floor
+            self.update_system_callback(self)
+
+        self._toggle_door()
+
+        # keep a little internal state
+        # and take out of service if required
+        # wasn't really compelled to put in it's own method
+        # at this point
+        self.total_trips +=1
+        self.floors_passed += len(move_sequence)
+
+        if self.total_trips % 100 == 0:
+            self._toggle_door()
+            self.in_service = False
 
     def _toggle_door(self):
         self.is_open = not self.is_open
