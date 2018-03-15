@@ -23,10 +23,22 @@ class ElevatorController(object):
             self._update_elevator_status(elevator)
 
 
+    # only public method and primary interface to the system
+    def request_move(self, from_floor, to_floor):
+        pass
+
     # a private instance method(to the outside world) used as a callback for
     # elevators to update the controller with their status. simple observer pattern mod.
     def _update_elevator_status(self, elevator):
-        pass
+        # extract
+        elevator_id = elevator.id
+        current_floor = elevator.current_floor
+        is_open = elevator.is_open
+        # update status
+        self.elevator_status[elevator_id] = {
+            'current_floor': current_floor,
+            'is_open': is_open
+        }
 
 
 ###############################
@@ -51,3 +63,11 @@ class _Elevator(object):
         self.total_trips = 0
         self.floors_passed = 0
         self.in_service = True
+
+    # well this moves to a new floor, named to keep
+    # a bit of symmetry with the controller
+    def move(self, desired_floor):
+        pass
+
+    def _toggle_door(self):
+        pass
